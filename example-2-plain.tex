@@ -1,0 +1,494 @@
+%&-translate-file il2-pl
+\input tugprocp.sty
+\input tugprocp.cfg
+\input ../setup.tex
+%%
+%%
+\pageno=3
+\PrelimDraftfalse
+\tolerance1450
+\pretolerance600
+\widowpenalty999999
+\clubpenalty999999
+\NormalTenPointSpacing
+\normalbottom
+\parskip0pt plus.5pt
+\hfuzz3.3pt
+\hbadness2050
+%\hyphenation{za-cznie-my}
+%\lefthyphenmin=2
+%
+
+\begingroup
+
+\long\def\type#1{\bgroup\tt\string#1\egroup\futurelet\next\dotype}
+\def\dotype{\ifcat a\next\space\fi}
+
+\ifx\eTeX\undefined
+ \def\eTeX{\leavevmode\hbox{$\varepsilon$}-\TeX}
+\fi
+
+\ifx\TeXbook\undefined
+ \def\TeXbook{{\sl The \TeX\/book\/}}
+\fi
+
+\title      *Ciekawe pêtle i~iteracje na drug± nó¿kê*
+\author     *Pawe³ Jackowski*
+\address    *GUST*
+\netaddress *P.Jackowski@gust.org.pl*
+
+\abstract 
+Do czego to podobne, ¿eby programista musia³ sam sobie zaimplementowaæ pêtle? 
+Do \TeX-a! \TeX\ jako jêzyk programowania podobny jest tylko do siebie. Ciekaw± 
+w³asno¶ci± \TeX-a, rzadko spotykan± w¶ród jêzyków programistycznych, jest 
+brak wbudowanej pêtli. Jednak dziêki temu, i¿ \TeX\ doskonale znosi definicje 
+rekursywne i~potrafi sprawdzaæ warunki, nie ma przeszkód, by pêtle definiowaæ 
+samodzielnie. Zrobi³ to Donald Knuth w~{\tt plain}-ie, poprawia³ Alois 
+Kabelschacht, Kees van der Laan,  Marcin Woliñski i~wielu innych, a~u¿ywa 
+ka¿dy praktykuj±cy \TeX-owiec. Artyku³ podsumowuje to, co ka¿dy \TeX-owiec 
+o~pêtlach wiedzieæ powinien, nie stroni±c od kruczków i~sztuczków, o~których 
+wiedzieæ nie musi.
+\endabstract
+
+\article
+
+\subhead *Czepianie siê \type\loop*
+
+Przyjrzyjmy siê raz jeszcze tradycyjnej, {\tt plain}-owej definicji pêtli
+([1], str. 352):
+\verbatim
+\def\loop#1\repeat{%
+ \def\body{#1}\iterate}
+\def\iterate{%
+ \body \let\next\iterate 
+ \else \let\next\relax\fi \next}
+\let\repeat=\fi 
+\endverbatim 
+%
+Definicja jest do¶æ czytelna i~zrozumia³a dziêki 
+makrom pomocniczym o~sugestywnych nazwach \type\next oraz \type\body. 
+Wykonujemy tutaj jednak niepotrzebne przypisanie przy ka¿dej iteracji. 
+Przypisanie to nadaje znaczenie instrukcji \type\next, której, tak samo jak 
+instrukcji \type\body, w~zasadzie nie powinni¶my u¿ywaæ gdziekolwiek indziej. 
+Poniewa¿ jednak instrukcje te s± schowane przed u¿ytkownikiem, ³atwo o~konflikt nazw.
+
+Powszechnie znanych jest kilka ulepszeñ tradycyjnej konstrukcji, wykorzystuj±cych
+polecenie \type\expandafter zamiast makra pomocniczego \type\next. Na przyk³ad ([2]):
+\verbatim
+\def\loop#1\repeat{%
+ \def\body{#1}\iterate}
+\def\iterate{%
+ \body\expandafter\iterate\fi}
+\endverbatim
+%
+albo jeszcze pro¶ciej ([6]);
+%
+\verbatim
+\def\loop#1\repeat{%
+ \def\iterate{%
+  #1\expandafter\iterate\fi}%
+ \iterate}
+\endverbatim
+%
+W~pierwszym przypadku pozbywamy siê zbêdnej definicji \type\next, w~drugim 
+tak¿e definicji \type\body. W~jeszcze innej konstrukcji (opisanej szerzej w~[3]) 
+ca³a zawarto¶æ pêtli wykonywana jest poza blokiem warunku \type\if{\tt...}\type\fi:
+%
+\verbatim
+\def\loop#1\repeat{%
+ \def\body{#1}\iterate}
+\def\iterate{%
+ \body\else\etareti\fi\iterate}
+\def\etareti\fi\iterate{\fi}
+\endverbatim
+%
+Podsumowanie tych i~innych rozwi±zañ mo¿na znale¼æ w~[4].
+
+\subhead *Pêtla w~pêtli*
+
+Powy¿sze konstrukcje, choæ poprawne i~eleganckie, nie umo¿liwiaj± stosowania 
+pêtli zagnie¿d¿onych. We wszystkich pierwsz± operacj± jest zapamiêtanie
+zawarto¶ci pêtli w~jakiej¶ instrukcji. Zagnie¿d¿enie spowodowa³oby konflikt
+znaczeñ tej instrukcji miêdzy pêtl± zewnêtrzn± i~wewnêtrzn±.
+
+Jak z~tego wybrn±æ? Kosztem nieznacznego spowolnienia pêtli, 
+mo¿na zastosowaæ parametr makra w~miejsce definicji. Przyk³adowo, zamiast powtarzaæ 
+instrukcjê \type\body w~ka¿dym \type\iterate, mo¿emy zadaæ fragment 
+powtarzanego kodu jako parametr instrukcji \type\iterate. Dla wygody u¿ytkowej 
+stosujemy prefiks \type\long, aby w~pêtli mog³a znale¼æ siê instrukcja 
+\type\par. Definiujemy tak¿e makro \type\gobbleone, które wykonywane jest 
+przed samym wyj¶ciem z~pêtli i~poch³ania nadmiarowy parametr znajduj±cy siê zaraz
+za \type\fi koñcz±cym warunek.
+%
+\verbatim
+\long\def\loop#1\repeat{%
+ \iterate\gobbleone{#1}}
+\long\def\iterate\gobbleone#1{%
+ #1\expandafter\iterate\fi
+ \gobbleone{#1}}
+\long\def\gobbleone#1{}
+\endverbatim
+%
+Definicja \type\gobbleone pe³ni tutaj dodatkow± rolê -- stanowi ogranicznik 
+makra \type\iterate\space(ang.~{\it macro delimiter\/}). Kiedy wykonywana jest 
+instrukcja \type\iterate, nastêpuj±ce po niej \type\gobbleone jest poch³aniane 
+jako (nieu¿ywany) fragment parametru. Na koñcu pêtli instrukcja \type\iterate 
+jest pomijana, za to \type\gobbleone poch³ania 
+parametr z~zawarto¶ci± pêtli.
+
+Powy¿sza pêtla mo¿e byæ u¿ywana tak samo jak jej postaæ tradycyjna,
+z~t± ró¿nic±, ¿e pêtle mo¿na zagnie¿d¿aæ. Pokazuje to przyk³ad:
+%
+\verbatim
+\count100=9
+\loop{\count101=65 % ASCII `A'
+ \advance\count100 by-1
+ \ifnum\count100>0
+ \leavevmode\loop
+  \char\count101 \the\count100
+  \advance\count101 by1
+  \ifnum\count101<73 \space
+\repeat\par
+}\repeat
+\endverbatim
+%
+Zastosowanie tego kodu da co¶ w~rodzaju pól szachowych. Elementy ka¿dego
+wiersza sk³ada pêtla wewnêtrzna, za¶ ca³e wiersze pêtla zewnêtrzna.
+
+ \begingroup
+ \long\def\loop#1\repeat{%
+  \iterate\gobbleone{#1}}
+ \long\def\iterate\gobbleone#1{%
+  #1\expandafter\iterate\fi
+  \gobbleone{#1}}
+ \long\def\gobbleone#1{}
+
+ \tt\count100=9
+ \loop{\count101=65
+  \advance\count100 by-1
+  \ifnum\count100>0
+  \leavevmode
+  \loop
+   \char\count101 \the\count100
+   \advance\count101 by1
+   \ifnum\count101<73 \space
+ \repeat\par}\repeat
+ \endgroup
+
+\noindent Nale¿y zwróciæ uwagê na zastosowanie grupy w~zewnêtrznym bloku pêtli:
+%
+\verbatim
+\loop{...\loop...\repeat...}\repeat
+\endverbatim
+%
+Grupa ta ma tutaj wp³yw tylko na zasiêg czytanego parametru. Sama zawarto¶æ 
+pêtli nadrzêdnej nie jest wykonywana w~grupie. Dziêki temu pêtla zewnêtrzna 
+mo¿e bez przeszkód korzystaæ z~przypisañ wykonanych w~pêtli wewnêtrznej. 
+Zastosowanie grupy jest konieczne -- bez niej \TeX\ skoñczy³by czytaæ 
+zawarto¶æ nadrzêdnej pêtli natychmiast po pierwszym napotkanym \type\repeat. 
+
+\subhead *Niech¿e siê rozwija*
+
+Mo¿liwo¶ci \TeX-a nie koñcz± siê na inkrementacji i~sprawdzaniu warto¶ci 
+licznika. Równie¿ \TeX-owe iteracje nie koñcz± siê na konstrukcjach 
+\type\loop{\tt...}\type\repeat. Czêsto istnieje na przyk³ad potrzeba wykonania 
+jakiej¶ procedury kolejno dla wszystkich leksemów pewnej grupy i~to w~takim 
+kontek¶cie, w~którym nie mo¿emy u¿ywaæ przypisañ (podczas tworzenia definicji 
+z~u¿yciem \type\edef, \type\xdef, wewn±trz \type\write-ów, \type\special-i 
+oraz \type\mark-ów). Tutaj warto przytoczyæ piêkne w~swej prostocie makro 
+\type\fifo, opisane szerzej w~[3]:
+
+\verbatim
+\def\fifo#1{\ifx\ofif#1\ofif\fi
+ \process#1\fifo}
+\def\ofif#1\fifo{\fi}
+\endverbatim
+%
+A~oto przyk³ad u¿ycia \type\fifo, w~którym ,,w locie''
+tworzymy ¶ci±gê z~kodów polskich znaków:
+%
+\verbatim
+\def\process#1{(#1 -> \number`#1)}
+\immediate\message
+ {\fifo ±æê³ñó¶¿¼\ofif}
+\endverbatim
+%
+Tutaj zamiast zliczaæ powtórzenia, wykonujemy dla kolejnych parametrów 
+instrukcjê \type\process. Na pocz±tku ka¿dej iteracji warunek \type\ifx 
+sprawdza, czy w³a¶nie po³kniêty parametr nie jest leksemem \type\ofif. Ten 
+ostatni wystêpuje tutaj jednocze¶nie w~roli ogranicznika listy leksemów oraz 
+makra koñcz±cego warunek, wykonywanego po ostatniej iteracji.
+
+\subhead *Gry liczbowe*
+
+Nikogo nie trzeba przekonywaæ, ¿e makr rozwijalnych (bez przypisañ) u¿ywa siê 
+wygodniej. A~jak omin±æ przypisania w~pêtlach operuj±cych na liczbach? W~koñcu 
+najbardziej typowe u¿ycie pêtli to powtórzenie jakiego¶ fragmentu kodu 
+okre¶lon± liczbê razy. Pokazane wcze¶niej konstrukcje 
+\type\loop{\tt...}\type\repeat osi±gaj± to poprzez iteracyjne zwiêkszanie (lub 
+zmniejszenie) pewnego licznika, a~to wymaga przypisañ.
+
+Sprawa nie jest jednak beznadziejna. Jak pokazuje ostatni przyk³ad, instrukcja
+\type\number rozwija ,,w locie'' dowoln± \TeX-ow± reprezentacjê liczby do postaci 
+dziesiêtnej. W~podstawowej wersji \TeX-a ka¿da operacja arytmetyczna 
+wymaga ju¿ przypisania. Z~pomoc± mo¿e przyj¶æ \eTeX\ udostêpniaj±cy kilka 
+wygodnych operacji pozwalaj±cych unikaæ niewygodnych przypisañ. Za przyk³ad 
+pos³u¿y tu instrukcja \type\numexpr dokonuj±ca podstawowych operacji na 
+liczbach (dodawanie, odejmowanie, mno¿enie i~dzielenie) w~sposób rozwijalny. 
+
+Spróbujmy za pomoc± omawianej instrukcji zbudowaæ makro \type\replicate, które 
+powtarza dowolny fragment kodu okre¶lon± liczbê razy. Pierwszy parametr makra 
+to liczba powtórzeñ, drugi za¶ to zawarto¶æ pêtli.
+%
+\verbatim
+\long\def\replicate#1#2{%
+ \ifnum\numexpr#1>0
+  #2\replicate{#1-1}{#2}\fi}
+\endverbatim 
+%
+Pêtlê zaczynamy od sprawdzenia, czy licznik jest dodatni, tj. czy nale¿y 
+wykonaæ powtórzenie. Je¶li tak, wykonywana jest zawarto¶æ pêtli podana jako 
+drugi parametr, po czym nastêpuje rekursywne wywo³anie procedury 
+\type\replicate z~licznikiem zmniejszonym o~1 i~z~drugim parametrem 
+w~niezmienionej postaci.
+
+Taka konstrukcja ma dwie powa¿ne wady. Po pierwsze, ka¿de kolejne powtórzenie 
+nastêpuje wewn±trz kumuluj±cych siê bloków \type\ifnum{\tt ...}\type\fi, co 
+grozi katastrof± przy du¿ej liczbie powtórzeñ. Po drugie, pierwszy parametr 
+makra w~ka¿dym obrocie pêtli powiêksza siê o~dwa znaki, a~podczas sprawdzania 
+warto¶ci licznika, \TeX\ zmuszony jest ka¿dorazowo do wyliczenia coraz 
+d³u¿szego wyra¿enia postaci \type\numexpr{\tt100-1-1-1...}.
+
+Spróbujmy zatem tak zmodyfikowaæ makro \type\replicate, aby ka¿de powtórzenie 
+wykonywane by³o poza warunkiem \type\ifnum{\tt...}\type\fi, oraz ¿eby parametr 
+reprezentuj±cy licznik mia³ bardziej eleganck± postaæ. 
+%
+\verbatim
+\long\def\replicate#1#2{%
+ \ifnum\numexpr#1>0
+  #2\expandafter\replicate\expandafter
+  {\number\numexpr#1-1\expandafter}%
+ \else
+  \expandafter\gobbleone
+ \fi{#2}}
+\endverbatim
+%
+Znów zaczynamy od sprawdzenia, czy licznik pêtli jest dodatni, tj. 
+czy nale¿y wykonaæ powtórzenie. Je¶li tak, wykonywana jest zawarto¶æ pêtli 
+(drugi parametr), po której \type\expandafter w~po³±czeniu 
+\type\number\type\numexpr zmniejsza licznik o~jeden i~ponownie uruchamia 
+procedurê \type\replicate z~now± warto¶ci± licznika. Drugi parametr procedury 
+\type\replicate przekazywany jest bez zmian i~znajduje siê za instrukcj± 
+\type\fi koñcz±c± warunek. Kiedy licznik osi±gnie 0 (lub kiedy z³o¶liwie 
+uruchomimy pêtlê z~parametrem nie wiêkszym ni¿ zero) \type\expandafter 
+unicestwia pozosta³e \type\fi, po czym uruchamiana jest znana ju¿ procedura 
+\type\gobbleone po³ykaj±ca nadmiarowy parametr.
+
+Korzystamy tu ze wspomnianej, zbawiennej w³asno¶ci instrukcji \type\number, 
+która powoduje rozwijanie makr nastêpuj±cych po niej do koñca, tj.~do 
+dziesiêtnej reprezentacji liczby. Podczas rozwijania wyra¿enia \type\numexpr, 
+wykonywana jest instrukcja \type\expandafter, która, niby mimochodem (podczas 
+rozwijania liczby!), powoduje znikniêcie bloku warunku. Nastêpnie \TeX\ 
+,,orientuje siê'', ¿e wyra¿enia nie da siê dalej rozwin±æ i~powraca do 
+instrukcji \type\replicate. Ta ostatnia uruchamiana jest z~liczbowym 
+parametrem w~dziesiêtnym zapisie i~z~drugim parametrem stanowi±cym niezmienn± 
+zawarto¶æ pêtli. Dzieje siê to ju¿ poza blokiem warunku.
+
+\noindent\hskip.9\parindent
+A oto przyk³ad u¿ycia makra 
+\type\replicate w~kontek¶cie, w~którym zawiod³aby 
+tradycyjna pêtla \TeX-owa wykorzystuj±ca przypisania. Makro \type\replicate
+jest rozwijalne i~mo¿na je zagnie¿d¿aæ.
+%
+\verbatim
+\immediate\message
+ {\replicate{100+1}
+  {Bêdê u¿ywa³ eTeX-a%
+    \replicate{3}{!} }}
+\endverbatim
+%
+Postawmy sobie teraz mniej szkolne zadanie. 
+Spróbujmy zdefiniowaæ makro \type\fixed,
+które wstawia cyfrê 0 przed inne cyfry tak, 
+aby uzupe³niæ zapis liczby do okre¶lonej 
+d³ugo¶ci. Przyk³adowo, 
+%
+\verbatim\fixed{4}{12}\endverbatim 
+%
+ma siê rozwin±æ do {\tt 0012}. Zacznijmy od makra pomocniczego s³u¿±cego 
+do ,,mierzenia'' d³ugo¶ci napisów.
+%
+\verbatim
+\long\def\abacus#1{\addabacus#10}
+\long\def\addabacus#1#2#3{%
+ \ifx#3#1#2\else
+  \expandafter\addabacus
+  \expandafter#1\expandafter
+  {\number\numexpr#2+1\expandafter}%
+ \fi}
+\endverbatim
+%
+Makro \type\abacus\space (z ³ac. {\it liczyd³o\/}) zlicza leksemy wystêpuj±ce miêdzy par± 
+dowolnych innych leksemów. 
+%
+\verbatim
+\count100=\abacus|Konstantyno%
+ politañczykiewiczówna|
+\edef\numofletters{%
+ \abacus\relax Antiestablish%
+  mentarianism\relax}
+\endverbatim
+%
+Przy ka¿dym obrocie pêtli makro sprawdza, czy kolejnym leksemem po³ykanym jako 
+parametr jest ten zastosowany jako ogranicznik mierzonego napisu. Je¶li nie, 
+makro w~znany ju¿ sposób podnosi o~1 swój licznik i~wykonuje kolejn± iteracjê. 
+Je¶li tak, makro po prostu zwraca swój licznik, bêd±cy liczb± leksemów znajduj±cych
+siê miêdzy dowolnie wybranymi ogranicznikami.
+
+Teraz korzystaj±c z~makr \type\replicate oraz \type\abacus definiujemy makro
+uzupe³niaj±ce napis wybranym znakiem, tak aby uzyskaæ napis okre¶lonej d³ugo¶ci.
+%
+\verbatim
+\def\fixedprefix#1#2#3{%
+ \expandafter\replicate\expandafter
+ {\number
+   \numexpr#1-\abacus\relax#2\relax}
+ {#3}#2}
+\endverbatim
+%
+Je¶li teraz napiszemy
+%
+\verbatim
+\edef\test{\fixedprefix{4}{ab}{*}}
+\endverbatim
+%
+w~instrukcji \type\test zostanie zapamiêtany napis {\tt**ab}. Pozostaje 
+skonstruowaæ wyspecjalizowan± postaæ makra \type\fixedprefix, która formatuje 
+liczby tak, aby sk³ada³y siê z~okre¶lonej liczby cyfr, uzupe³niaj±c w~razie 
+potrzeby zerami. Poniewa¿ makro \type\fixed ma operowaæ na liczbach, pierwsz± 
+operacj±, jak± powinni¶my wykonaæ, jest rozwiniêcie parametrów podanych przez 
+u¿ytkownika do ci±gu samych cyfr. Tê sztuczkê te¿ ju¿ znamy.
+%
+\verbatim
+\def\fixed#1#2{%
+ \expandafter\fixedzero\expandafter
+  {\number\numexpr#1\expandafter}%
+ \expandafter{\number\numexpr#2}}
+\def\fixedzero#1#2{%
+ \fixedprefix{#1}{#2}{0}}
+\endverbatim 
+% 
+Wiemy ju¿, ¿e \TeX\ wytrwale i~do koñca rozwija liczby. Wiemy tak¿e, ¿e bez 
+trudu radzi sobie z~d³ugimi ci±gami leksemów po¿eranych jako parametry. 
+Przedstawione poni¿ej makro \type\rnum\space (skrót od ang. {\it read number\/}) 
+wykorzystuje obie wspomniane {\TeX}niki iteracji do czytania liczb w~ró¿nej 
+notacji, od dwójkowej do szesnastkowej.
+%
+\verbatim
+\def\rnum#1#2{\dornum{#1}{0}#2\relax}
+\def\dornum#1#2#3{\ifx#3\relax#2\else
+  \expandafter\dornum\expandafter
+  {\number
+    \numexpr#1\expandafter}\expandafter
+  {\number
+    \numexpr#1*#2+"#3\expandafter}%
+ \fi}
+\endverbatim
+%
+W~ten sposób nauczyli¶my \TeX-a, czym jest na przyk³ad $1\,000\,000\,000\,000$ w~zapisie 
+dwójkowym:
+%
+\verbatim
+\count100=\rnum{2}{1000000000000}
+\endverbatim
+%
+Czytelnik pewnie zwróci³ uwagê na znak `{\tt"}' u¿yty w~przedostatniej linii 
+makra \type\dornum. Jak wiadomo, dla \TeX-a oznacza to ,,czytaj cyfry 
+szesnastkowo''. Bez tego zabiegu \TeX\ nie zrozumia³by cyfr notacji wy¿szych 
+ni¿ dziesiêtna, tj. od {\tt A} do {\tt F}.
+
+Na deser propozycja makra \type\xnum dzia³aj±cego odwrotnie 
+do \type\rnum. Makro zamienia notacjê liczby z~systemu dziesiêtnego do innych 
+systemów, od dwójkowego do szesnastkowego, oczywi¶cie w~sposób rozwijalny.
+Je¶li Czytelnik dobrn±³ do tego miejsca, nie powinien mieæ trudno¶ci ze 
+zrozumieniem poni¿szego kodu. Tym, co nie u¿ywaj± \eTeX-a nale¿± siê jednak dwa 
+wyja¶nienia.
+
+\item{1.}Je¶li podczas obliczania \type\numexpr\space\eTeX\ napotka leksem 
+\type\relax, natychmiast koñczy czytaæ wyra¿enie, a~samo \type\relax znika bez ¶ladu.
+
+\item{2.}Je¶li w~wyra¿eniu \type\numexpr wystêpuje dzielenie nieca³kowite,
+wynik zostaje zaokr±glony, nie za¶, jak w~tradycyjnym \TeX-u, sprowadzony 
+do czê¶ci ca³kowitej.
+
+\noindent Wiêcej na temat konstrukcji \eTeX-owych w~[5].
+
+\verbatim
+\def\hexdigit#1{%
+ \expandafter\hexdigits
+ \number\numexpr#1\relax\relax}
+\def\hexdigits#1\relax
+{\ifcase#1
+  0\or1\or2\or3\or4\or5\or
+  6\or7\or8\or9\or A\or 
+  B\or C\or D\or E\or F\fi}
+\def\xnum#1#2{%
+ \expandafter\doxnum\expandafter
+ {\number
+  \numexpr#1\expandafter}\expandafter
+ {\number\numexpr#2}}
+\def\doxnum#1#2{%
+ \ifcase
+  \ifnum#2<\numexpr#2/#1*#1\relax
+   0 \else1 \fi
+ \expandafter\doxnumdown\or
+ \expandafter\doxnumup\fi
+ {#1}{#2}}
+\def\doxnumdown#1#2{%
+ \ifnum#1>#2 \else
+  \expandafter\doxnum\expandafter
+  {\number#1\expandafter}\expandafter
+  {\number\numexpr#2/#1-1\expandafter}\fi
+ \hexdigit{#2-(#2/#1-1)*#1}}
+\def\doxnumup#1#2{%
+ \ifnum#1>#2 \else
+  \expandafter\doxnum\expandafter
+  {\number#1\expandafter}\expandafter
+  {\number\numexpr#2/#1\expandafter}\fi
+ \hexdigit{#2-#2/#1*#1}}
+% test
+\count100=\rnum{2}{1000000000}
+\immediate\message
+ {\xnum{16}{\count100}}
+\endverbatim
+
+\subhead *Bibliografia*
+
+\item{[1]} Donald E. Knuth: \TeXbook.
+
+\item{[2]} Alois Kabelschacht: \type\expandafter vs. \type\let and
+\type\def in conditionals and a~generalization of
+plain's \type\loop. TUGboat, Volume 8 (1987), No. 2, 184--185.
+
+\item{[3]} Kees van der Laan: FIFO and LIFO sing the BLUes.
+Biuletyn GUST nr 4 (1992), 20--26.
+
+\item{[4]} Marcin Woliñski: O~pewnych konstrukcjach
+warunkowych i~iteracyjnych. Biuletyn GUST nr 7 (1996), 5--9.
+
+\item{[5]} Peter Breitenlohner: The \eTeX\ Manual,
+Version 2, February 1998, 9.
+
+\item{[6]} Victor Eijkhout: The bag of tricks. 
+TUGboat, Volume 21 (2000), No. 1, 91.
+
+\endgroup
+\makesignature
+\endarticle
+\bye
+
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: t
+%%% End: 

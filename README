@@ -1,0 +1,7 @@
+Modified TUGproc macros for paper submissions (in Polish) 
+to Polish TeX Users Group (GUST) conference.
+
+Papers in English should be prepared with standard ltugproc.cls/tugproc.sty 
+macros. Bothe plain and latex macros are accepted, however the later (latex) 
+are  preferred. 
+The macros can be found at http://www.tug.org/TUGboat/location.html

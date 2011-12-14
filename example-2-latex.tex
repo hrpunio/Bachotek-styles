@@ -1,0 +1,399 @@
+%& -translate-file=il2-pl
+\documentclass[onecolumn]{ltugprocp}
+\usepackage{polski}
+\usepackage{url}
+\usepackage{alltt}
+\setcounter{page}{1}
+%\flushbottom
+%\parskip0pt plus 1.0pt
+%\overfullrule15mm
+
+\newcommand\attr[1]{\texttt{#1}}
+\newcommand\application[1]{\texttt{#1}}
+\def\DLL{\textdollar}
+
+\title{DocBook, praktyczne  wykorzystanie standardu XML}
+\author{Tomasz Przechlewski}
+\address{Uniwersytet Gdañski, Wydzia³ Zarz±dzania}
+\netaddress{tomasz@gnu.univ.gda.pl}
+\begin{abstract}
+DocBook to deklaracja typu dokumentu (DTD) opracowana z~my¶l±
+o~tworzeniu dokumentacji technicznej. 
+Dostêpno¶æ gotowych szablonów DSSSL/XSL pozwala na
+publikowanie dokumentów XML zgodnych z~DocDookiem 
+w~wielu formatach prezentacyjnych, bez konieczno¶ci tworzenia
+do tego celu w³asnych narzêdzi czy te¿ 
+nauki kolejnego jêzyka programowania.
+Zamierzeniem tego tekstu jest
+zapoznanie czytelnika z~wybranymi narzêdziami przetwarzania
+dokumentów typu DocBook, przy za³o¿eniu i¿ zaznajomiony
+jest On ju¿ z~podstawami standardów XML/XSL.
+\end{abstract}
+
+\begin{document}
+\maketitle
+
+\section{Wprowadzenie}
+DocBook to aplikacja SGML/XML opracowana z~my¶l± o~tworzeniu
+dokumentacji technicznej, masowo wykorzystywana wspó³cze¶nie do
+dokumentowania Wolnego Oprogramowania.
+Przyk³adami wykorzystania
+DocBooka s± m.in. projekty Gnome
+(\url{http://developer.gnome.org/projects/gdp/handbook/gdp-handbook/}),
+KDE (\url{http://i18n.kde.org/doc/markup.html}) czy LinuxDoc
+(\url{http://linuxdoc.org/LDP/}). 
+Zalet± i~du¿± zachêt± do u¿ywania DocBooka jest dostêpno¶æ gotowych
+szablonów przygotowanych zarówno w~standardzie DSSSL jak i~XSL 
+(przez Normana Walsha), umo¿liwiaj±cych
+zamianê dokumentów XML do kilku 
+popularnych formatów (HTML, XHTML, PDF, RTF).
+
+Zamierzeniem tego tekstu jest
+zaznajomienie czytelnika z~wybranymi narzêdziami przetwarzania
+dokumentów typu DocBook, przy za³o¿eniu i¿ czytelnik jest ju¿ obeznany
+z~podstawami standardów XML/XSL. Je¿eli tak nie jest, to 
+dobrym wprowadzeniem w~tematykê dokumentów strukturalnych 
+jest \cite{Ray2001}, a~z~publikacji dostêpnych
+\emph{on-line\/} np.~\cite{Walsh-xml,tei.intro,Olko2001,Przechlewski2002b}.
+
+\section{Redagowanie dokumentu typu DocBook}
+Do redagowania dokumentów typu DocBook niezbêdne jest
+zainstalowanie jednej 
+z~wersji DTD (\url{http://www.oasis-open.org/docbook/xml/}), 
+parsera oraz edytora u³atwiaj±cego pracê z~tym standardem.
+Podobnie jak w~przypadku innych dokumentów strukturalnych
+wygodnym ¶rodowiskiem pracy jest edytor Emacs 
+z~bibliotek± psgml (\url{http://sourceforge.net/projects/psgml/})
+wraz z~dobrym parserem SGML/XML takim, jak: 
+\verb@onsgml@ (\url{http://openjade.sourceforge.net/}) 
+lub \verb@xmllint@ (\url{http://xmlsoft.org/}).
+W~przypadku systemu Linuks wszystkie
+ww. narzêdzia s± bardzo ³atwe do zainstalowania z~pakietów 
+dystrybucyjnych. W~przypadku systemu Windows polecam Emacsa
+z~p³yty TeXLive~7, za¶ pozosta³e elementy nale¿y skopiowaæ z~odpowiednich
+archiwów i~zainstalowaæ samodzielnie. Szczegó³owy opis jak
+zainstalowaæ i~skonfigurowaæ pakiet psgml w~systemie MS~Windows
+mo¿na znale¼æ w~\cite{Hoenicka2000} 
+oraz~\cite{Przechlewski2003}.
+
+\section{Struktura dokumentu}
+Dokument DocBook winien zaczynaæ siê od deklaracji XML oraz
+deklaracji typu dokumentu. Je¿eli u¿ywamy kodowania innego 
+ni¿ domy¶lne UTF-8, to w~deklaracji XML nale¿y dodaæ pseudoargument
+\verb@encoding@ z~odpowiedni± warto¶ci±. Przyk³ad najprostszego
+dokumentu typu DocBook mo¿e zatem wygl±daæ nastêpuj±co:
+ %
+\begin{verbatim}
+<?xml version="1.0" encoding="iso-8859-2" ?>
+<!DOCTYPE article PUBLIC "-//OASIS//DTD DocBook XML V4.1.2//EN"
+   "/usr/local/sgml/dtd/docbook/xml/4.1.2/docbookx.dtd">
+<article lang='pl'>
+  <title>Przyk³ad</title>
+  <sect1>
+    <title>Punkt pierwszy</title>
+    <para>Przyk³adowy akapit</para>
+  </sect1>
+</article>
+\end{verbatim}
+ %
+Powy¿sze jest poprawnym dokumentem typu DocBook.  Mo¿na siê o~tym
+przekonaæ wybieraj±c z~menu Emacsa
+polecenie \verb@SGML->Validate@ 
+lub wpisuj±c \verb@xmllint --valid --noout plik.xml@ 
+z~wiersza poleceñ.
+Zalecane jest aby element g³ówny dokumentu posiada³
+atrybut \attr{lang} z~warto¶ci± okre¶laj±c± jêzyk dokumentu (tak jak
+w~przyk³adzie powy¿ej).
+
+Hierarchia dokumentu DocBook jest typowa dla dokumentacji.
+Na pierwszym z~poziomów jest zbiór dokumentów lub ksi±¿ek sk³adaj±cych
+siê z~rozdzia³ów lub artyku³ów.  Artyku³y i~rozdzia³y mog± byæ
+podzielone na punkty, podpunkty, akapity, wyliczenia, wypunktowania,
+spisy pojêæ oraz inne typowe czê¶ci ksi±¿ek takie jak: przedmowa,
+skorowidze, spisy tre¶ci, ilustracji, tabel itp.
+Kompletny opis DTD mo¿na znale¼æ w~\cite{Walsh-tdg}.
+
+\section{Formatowanie: arkusze stylów XSL}
+Do zamiany dokumentów DocBook na postaæ prezentacyjn± mo¿na
+wykorzystaæ gotowe arkusze stylów XSL (dalej okre¶lane w~skrócie jako
+DBXSL, dostêpne w~\url{http://sourceforge.net/projects/docbook}) 
+oraz dowolny procesor XSLT\footnote{Istniej± te¿ arkusze
+opracowane w~standardzie DSSSL, 
+ale nie bêdziemy ich opisywaæ.}.
+Dokumentacja DBXSL zaleca korzystanie 
+z~dwóch procesorów: \verb@saxon@ (\url{http://saxon.sourceforge.net})
+oraz \verb@xsltproc@ (\url{http://xmlsoft.org/XSLT/}). 
+Do zamiany plików XML do formatu PDF potrzebny bêdzie
+jeszcze program obs³uguj±cy standard XSL-FO, 
+tak jak np. \texttt{fop} (\url{http://xml.apache.org/fop}).
+W~przypadku systemu Linuks wszystkie
+ww. narzêdzia s± bardzo ³atwe do zainstalowania z~pakietów 
+dystrybucyjnych. U¿ytkownicy systemu Windows musz± wykonaæ
+instalacjê samodzielnie kopiuj±c odpowiednie archiwa.
+Programy \texttt{saxon} i~\texttt{fop} 
+wymagaj± uprzedniego zainstalowania interpretatora jêzyka Java wraz z~JDK.
+Ponadto \texttt{fop} -- do prawid³owego dzia³ania 
+w~¶rodowisku jêzyka polskiego --~wymaga dodatkowej konfiguracji
+(por.~\cite{Przechlewski2002b}).
+
+Transformacja pliku XML do formatu prezentacyjnego sprowadza siê do
+uruchomienia procesora XSLT i~podania w~wierszu poleceñ
+odpowiedniego arkusza (\verb@$DBXSL@ oznacza korzeñ dystrybucji): 
+ %
+\begin{description}
+\item[\DLL{}DBXSL/html/docbook.xsl] utworzy pojedynczy plik HTML;
+\item[\DLL{}DBXSL/chunk.xsl] utworzy dokument HTML podzielony na wiele plików;
+\item[\DLL{}DBXSL/html/docbook.xsl] zamieni dokument DocBook
+  na dokument w~standardzie XSL-FO.
+\end{description}
+ %
+Przyk³adowo wykonanie polecenia:
+ %
+\begin{verbatim}
+xsltproc  --output plik.html  $DBXSL/html/docbook.xsl  plik.xml
+\end{verbatim}
+ %
+uruchomi transformacjê \texttt{pliku.xml} do dokumentu HTML, 
+umieszczonego w~pojedynczym pliku.
+
+\section{Modyfikowanie sposobu formatowania}
+
+Wielk± zalet± arkuszy DBXSL jest ich ³atwa konfiguracja. 
+Arkusze te
+w~szczególno¶ci posiadaj± wiele parametrów okre¶laj±cych ró¿ne aspekty
+formatowania dokumentów.
+Najprostsz± metod± zmiany sposobu formatowania jest przypisanie 
+okre¶lonemu parametrowi odpowiedniej warto¶ci. 
+Przyk³adowo w~standardowym sposobie formatowania dokumentów
+HTML tytu³y punktów, podpunktów i innych jednostek 
+podzia³u hierarchicznego nie s± numerowane.
+Aby to zmieniæ wystarczy przypisaæ parametrowi \texttt{section.autolabel}
+warto¶æ niezerow±. W~podobnie prosty sposób
+warto¶æ parametru \texttt{toc.section.depth}
+okre¶la, które z~nich maj± byæ umieszczone w~spisie tre¶ci.
+
+W~przypadku uruchamianie procesora 
+XSLT ,,z~wiersza poleceñ'', konkretna sk³adnia przypisania parametrowi
+warto¶ci jest ró¿na w~zale¿no¶ci od wykorzystywanego narzêdzia.
+W~przypadku dwóch zalecanych w~dokumentacji DBXSL procesorów
+uruchomienie transformacji z~okre¶leniem warto¶ci obu ww.~parametrów
+wygl±da³oby nastêpuj±co:
+ %
+\begin{verbatim}
+saxon -o plik.html plik.xml plik.xsl section.autolabel=1 toc.section.depth=1
+\end{verbatim}
+lub
+\begin{verbatim}
+xsltproc  --output plik.html --stringparam section.autolabel=1 \
+  --stringparam toc.section.depth=1 plik.xsl plik.xml
+\end{verbatim}
+ %
+Pe³ne zestawienie dostêpnych
+parametrów znajduje siê w~dokumentacji do DBXSL 
+w~katalogach \verb@$DBXSL/doc/html@ oraz \verb@$DBXSL/doc/fo@,
+gdzie \verb@$DBXSL@ oznacza korzeñ dystrybucji %$
+arkuszy stylów.
+
+Specyfikowanie warto¶ci parametrów z~wiersza poleceñ ma sens tylko
+wtedy, kiedy zmiany s± niewielkie. W~przypadku wiêkszych modyfikacji
+odpowiednie definicje
+nale¿y umie¶ciæ w~pliku ,,adaptuj±cym'' i~ten plik podawaæ
+jako argument przy uruchamianiu procesora XSLT, przyk³adowo:
+ %
+\begin{verbatim}
+<?xml version='1.0'?>
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0">
+<xsl:import href="/usr/share/docbook.xsl"/>
+
+<xsl:param name="section.autolabel" select="1"/>
+<xsl:param name="toc.section" select="1"/>
+<xsl:param name="html.stylesheet" select="'plik.css'"/>
+\end{verbatim}
+ %
+Powy¿szy przyk³ad ilustruje w~jaki sposób mo¿na nadawaæ warto¶ci
+parametrom w~jêzyku XSLT: nazwê parametru okre¶la atrybut 
+\attr{name}, a~jego warto¶æ atrybut \attr{select}.
+Polecenie \verb@<xsl:import>@ importuje szablon XSLT i~\emph{musi\/}
+wyst±piæ \emph{bezpo¶rednio\/} po \verb@<xsl:stylesheet>@.
+
+W~sk³adni jêzyka XSLT znajduje siê tak¿e polecenie umo¿liwiaj±ce definiowanie
+zbioru atrybutów (\texttt{<xsl:attribute-set>}). 
+Taki zbiór przypomina wielowarto¶ciowy parameter, za pomoc± którego 
+mo¿na w~wygodny sposób okre¶laæ warto¶ci wielu parametrów jednocze¶nie.
+W~arkuszach DBXSL jest okre¶lonych 
+wiele zbiorów atrybutów w~pliku \verb@$DBXSL/fo/param.xsl@. 
+Dopasowanie warto¶ci zbiorów atrybutów jest równie proste 
+jak w~przypadku pojedynczych parametrów.
+Przyk³adowo zbiór atrybutów \verb@section.title.properties@
+okre¶la sposób formatowania
+tytu³ów punktów:
+ %
+\begin{verbatim}
+<xsl:attribute-set name="section.title.properties">
+  <xsl:attribute name="font-family"> <xsl:value-of select="$title.font.family"/>
+  </xsl:attribute>
+  <xsl:attribute name="font-weight">bold</xsl:attribute>
+  <!-- font size is calculated dynamically by section.heading template -->
+  <xsl:attribute name="keep-with-next.within-column">always</xsl:attribute>
+  <xsl:attribute name="space-before.minimum">0.8em</xsl:attribute>
+  <xsl:attribute name="space-before.optimum">1.0em</xsl:attribute>
+  <xsl:attribute name="space-before.maximum">1.2em</xsl:attribute>
+</xsl:attribute-set>
+\end{verbatim}
+ %
+Kolejnym sposobem dopasowanie 
+arkuszy DBXSL do w³asnych potrzeb jest wype³nienie
+pustych szablonów wykonywanych w~okre¶lonych miejscach. 
+Standardowo szablony te nie zawieraj± ¿adnej tre¶ci,
+a~ich wykonanie nie daje ¿adnego rezultatu. 
+Przyk³adowo istnieje szablon \verb@user.header.content@ 
+wykonywany na pocz±tku tworzenia ka¿dego pliku HTML. 
+Jakakolwiek tre¶æ generowana przez ten szablon pojawi siê na pocz±tku
+ka¿dego utworzonego dokumentu HTML.
+
+Szczegó³owy opis ró¿nych sposobów dopasowywania DBXSL do w³asnych
+potrzeb zawiera dokumentacja 
+arkuszy (umieszczona w katalogu \verb@doc@ dystrybucji)
+oraz~\cite{Stayton}.
+
+\section{Polonizacja}
+
+Funkcjonalno¶æ arkuszy DBXSL z~punktu widzenia formatowania dokumentów
+przygotowanych w~ró¿nych jêzykach sprowadza siê w~zasadzie wy³±cznie
+do poprawnego wstawiania tekstów generowanych automatycznie.  Aby
+osi±gn±æ ten efekt wystarczy prawid³owo okre¶liæ warto¶æ atrybutu \attr{lang}
+g³ównego elementu dokumentu\footnote{Oczywi¶cie nale¿y tak¿e 
+odpowiednio zadeklarowaæ sposób kodowania 
+polskich znaków w~deklaracji XML, por.~punkt~\emph{Struktura dokumentu}.}. 
+Sortowanie zgodnie ze zwyczajami
+lokalnymi nie jest zaimplementowane w~bie¿±cych wersjach arkuszy, ale
+mo¿na przypuszczaæ, ¿e w~przysz³ych wersjach zostanie wykonane.
+
+W~chwili pisania tego tekstu arkusze DBXSL wspieraj± oko³o 40 jêzyków.
+Napisy wstawiane automatycznie znajduj± siê w plikach o nazwach
+okre¶lonych przez kod jêzyka z~rozszerzeniem \verb@.xml@ (np. \verb@pl.xml@)
+znajduj±cych siê w katalogu \verb@$DBXSL/common@. 
+Mo¿liwe jest zdefiniowanie
+wstawiania ró¿nych napisów w~zale¿no¶ci od kontekstu, w~jakim znajduje
+siê element lub sposobu formatowania dokumentu. 
+
+Przyk³adowo, aby zmodyfikowaæ tekst 
+wstawiany 
+%przez szablony DBXSL 
+przy formatowaniu odsy³acza nale¿y zmieniæ
+zawarto¶æ elementu \verb@<l:context>@ oznaczon± 
+atrybutem \verb@name@ o~warto¶ci \verb@xref@:
+ %
+\begin{verbatim}
+<l:context name="xref">
+   <l:template name="abstract" text="%t"/>
+   <l:template name="answer" text="Odp:&#160;%n"/>
+   ...
+   <l:template name="figure" text="Rysunek %n. %t"/>
+   ...
+\end{verbatim}
+ %
+W~powy¿szym kodzie symbol \verb@%n@ oznacza numer elementu,
+a~\verb@%t@ jego tytu³. Zatem zapis: 
+ %
+\begin{verbatim}
+dane na <xref linkend="rys.dyna.obr"/> potwierdzaj±, ¿e
+\end{verbatim}
+ %
+zostanie sformatowany, np. jako: ,,dane na~Rysunek~11. Dynamika obrotów 
+potwierdzaj±, ¿e'', co przyznajmy nie do koñca odpowiada regu³om
+poprawnej polszczyzny.
+
+Aby to zmieniæ nale¿y skopiowaæ odpowiedni 
+element do szablonu ,,adaptacyjnego'' i~zmodyfikowaæ go. 
+Wszystkie elementy okre¶laj±ce sposób generowania tekstu 
+powinny zostaæ umieszczone wewn±trz parametru \verb@local.l10n.xml@:
+ %
+\begin{verbatim}
+<xsl:param name="local.l10n.xml" select="document('')"/>
+<l:i18n xmlns:l="http://docbook.sourceforge.net/xmlns/l10n/1.0">
+  <l:l10n language="pl">
+    <l:context name="xref">
+      <l:template name="figure" text="rys. %n"/>
+    </l:context>    
+  </l:l10n>
+</l:i18n>
+\end{verbatim}
+ %
+Spowoduje to zmianê sposobu formatowanie na: ,,dane na~rys.~11. 
+Dynamika obrotów potwierdzaj±, ¿e''. W~analogiczny sposób nale¿y
+dopasowaæ teksty wstawiane przy odes³aniach 
+do elementów innych typów.
+
+\section{Podsumowanie}
+Najpowa¿niejszym ograniczeniem opisanego w tek¶cie 
+systemu produkcji dokumentów jest niska jako¶æ
+typograficzna dokumentów PDF. Wynika to zarówno z~ograniczeñ standardu
+XSL-FO, jak te¿ ci±gle eksperymentalnego charakteru aplikacji
+wspieraj±cych rekomendacjê XSL-FO (przyjmniej tych rozpowszechnianych
+jako Oprogramowanie Wolne). Tym niemniej w~wielu zastosowaniach
+DocBook mo¿e byæ u¿yteczn± aplikacj±.
+
+\begin{thebibliography}{99}
+
+\bibitem{tei.intro}
+Burnard L., Sperberg-McQueen C.~M.,
+\textit{TEI Lite: An Introduction to Text Encoding for Interchange},
+June 1995. \url{http://www.uic.edu/orgs/tei/intros/teiu5.html}
+
+\bibitem{du.charme}
+DuCharme B.,
+\textit{Edytowanie dokumentów \textsc{SGML} z~wykorzystaniem Emacsa
+ i~psgml}. T³umaczenie drugiego rozdzia³u
+ z~ksi±¿ki \textit{SGML CD}, dostêpne
+ w~\url{http://panda.bg.univ.gda.pl/~tomasz}
+
+\bibitem{Hoenicka2000}
+Hoenicka M., \emph{SGML for Windows NT}, 2000.
+\url{http://ourworld.compuserve.com/homepages/hoenicka_markus/ntsgml.html}
+
+\bibitem{Olko2001}
+Olko M.,
+XSL -- czyli jak przeczytaæ XMLowego ,,Pana Tadeusza''
+Biuletyn GUST 16/2001, s.~25--30.
+
+\bibitem{Pawson2001}
+Pawson D.,
+\emph{An Introduction to XSL Formatting Objects}, 2001
+
+\bibitem{Przechlewski2003}
+Przechlewski T.,
+\emph{Definicja dokumentu typu PMLA\/}, 2003,
+\url{http://gnu.univ.gda.pl/~tomasz/sgml/pmla/}
+
+\bibitem{Przechlewski2002b}
+Przechlewski T.,
+\emph{Praktyczne wprowadzenie do standardu XSL-FO},
+Biuletyn GUST 18/2002.
+
+\bibitem{Ray2001}
+Ray E.~T., \emph{Nauka jêzyka XML}, 
+Wydawnictwo RM, Warszawa 2001.
+
+\bibitem{Stayton}
+Stayton R.,
+\emph{Using the DocBook XSL Stylesheets}, 2003,
+\url{http://www.sagehill.net/xml/docbookxsl/index.html}.
+
+\bibitem{Walsh-xml}
+Walsh~N.,
+\emph{Technical introduction to XML}, 1998,
+\url{http://nwalsh.com/docs/articles/xml/}.
+
+\bibitem{Walsh-tdg}
+Walsh~N., Muellner~L.,
+\emph{DocBook: The Definitive Guide\/}, wersja
+Version 2.0.7 (Jun/2002). Dokument dostêpny 
+w~\url{http://www.docbook.org/tdg/en/html/}
+
+\bibitem{DBWiki}
+DocBook Wiki, \url{http://www.docbook.org/wiki/moin.cgi}
+
+\end{thebibliography}
+
+\end{document}
